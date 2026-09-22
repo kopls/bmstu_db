@@ -1,0 +1,69 @@
+\l - посмотреть все базы данных
+
+\c warehouse - подключиться к базе warehouse
+
+\conninfo - посмотреть текущее подключение
+
+\du - посмотреть пользователей/роли PostgreSQL
+
+\dt - посмотреть таблицы текущей базы
+
+\dt public.* - посмотреть таблицы схемы public
+
+\d - посмотреть объекты текущей базы
+
+\d product - посмотреть структуру таблицы product
+
+\d+ product - посмотреть подробную структуру таблицы product
+
+\dn - посмотреть схемы
+
+\i file.sql - запустить SQL-скрипт из файла
+
+\i /полный/путь/file.sql - запустить SQL-скрипт по полному пути
+
+\q - выйти из psql
+
+? - посмотреть все команды psql
+
+\h - посмотреть справку по SQL-командам
+
+\h CREATE TABLE - посмотреть синтаксис CREATE TABLE
+
+\h ALTER TABLE - посмотреть синтаксис ALTER TABLE
+
+\h COPY - посмотреть синтаксис COPY
+
+! clear - очистить экран терминала
+
+SELECT current_database(); - посмотреть текущую базу
+
+SELECT current_user; - посмотреть текущего пользователя PostgreSQL
+
+SELECT * FROM product; - вывести все строки таблицы product
+
+SELECT * FROM product LIMIT 10; - вывести первые 10 строк
+
+SELECT COUNT(*) FROM product; - посчитать количество строк
+
+CREATE DATABASE warehouse; - создать базу warehouse
+
+DROP DATABASE warehouse; - удалить базу warehouse
+
+CREATE ROLE artyom WITH LOGIN; - создать роль artyom
+
+ALTER DATABASE warehouse OWNER TO artyom; - сделать artyom владельцем базы warehouse
+
+DROP ROLE artyom; - удалить роль artyom
+
+\password artyom - задать/сменить пароль роли artyom
+
+psql -d warehouse - подключиться к базе warehouse из терминала
+
+psql -U artyom -d warehouse - подключиться как пользователь artyom
+
+psql -d warehouse -f file.sql - запустить SQL-файл из обычного терминала
+
+pg_lsclusters - посмотреть PostgreSQL-кластеры в Ubuntu
+
+sudo -u postgres psql - войти в PostgreSQL от системного пользователя postgres
