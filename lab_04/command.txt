@@ -67,3 +67,29 @@ psql -d warehouse -f file.sql - запустить SQL-файл из обычн�
 pg_lsclusters - посмотреть PostgreSQL-кластеры в Ubuntu
 
 sudo -u postgres psql - войти в PostgreSQL от системного пользователя postgres
+
+Лабораторная № 4: PostgreSQL + PL/Python
+
+cd /home/artyom/repositories/bmstu_db/lab_04
+
+# Первичная установка пакета в Ubuntu (в текущем окружении уже выполнена)
+sudo apt install postgresql-plpython3-14
+
+# Установка расширения и всех объектов в существующую базу
+psql -X -v ON_ERROR_STOP=1 -d warehouse -f install.sql
+
+# Проверка всех 6 объектов с откатом тестовых данных
+psql -X -v ON_ERROR_STOP=1 -d warehouse -f tests.sql
+
+# Войти в базу и выполнять примеры из examples.sql по одному
+psql -d warehouse
+
+# Внутри psql:
+\df sc1.*_py
+\dT+ sc1.product_balance_py
+\d sc1.product_price_log_py
+\d sc1.arrival_item
+\q
+
+# Подробный разбор:
+less explanation.md
