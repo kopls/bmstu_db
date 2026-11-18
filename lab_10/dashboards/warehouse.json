@@ -1,0 +1,347 @@
+{
+  "uid": "warehouse-lab10",
+  "title": "Склад: поступления и остатки",
+  "description": "Лабораторная работа 10. PostgreSQL warehouse.",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "tags": [
+    "bmstu",
+    "lab_10"
+  ],
+  "refresh": "30s",
+  "time": {
+    "from": "now-2y",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "product",
+        "label": "Товар",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "warehouse-postgres"
+        },
+        "query": "select name as __text, id as __value from sc1.product order by id",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "Все"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": [],
+        "sort": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Количество товаров",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "warehouse-postgres"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "warehouse-postgres"
+          },
+          "rawSql": "select count(*) as \"Товаров\"\nfrom sc1.product p\nwhere p.id in (${product:csv});",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Стоимость поступлений",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "warehouse-postgres"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "warehouse-postgres"
+          },
+          "rawSql": "select coalesce(sum(ai.quantity * ai.unit_price), 0) as \"Стоимость\"\nfrom sc1.arrival_item ai\njoin sc1.arrival a on a.id = ai.arrival_id\nwhere $__timeFilter(a.arrival_time)\n  and ai.product_id in (${product:csv});",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Стоимость поступлений по месяцам",
+      "type": "timeseries",
+      "datasource": {
+        "type": "postgres",
+        "uid": "warehouse-postgres"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "warehouse-postgres"
+          },
+          "rawSql": "select date_trunc('month', a.arrival_time) as \"time\",\n       sum(ai.quantity * ai.unit_price)::double precision as \"Стоимость\"\nfrom sc1.arrival a\njoin sc1.arrival_item ai on ai.arrival_id = a.id\nwhere $__timeFilter(a.arrival_time)\n  and ai.product_id in (${product:csv})\ngroup by 1\norder by 1;",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Топ-10 товаров по поступлениям",
+      "type": "barchart",
+      "datasource": {
+        "type": "postgres",
+        "uid": "warehouse-postgres"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "warehouse-postgres"
+          },
+          "rawSql": "select p.name as \"Товар\", sum(ai.quantity)::bigint as \"Количество\"\nfrom sc1.arrival_item ai\njoin sc1.product p on p.id = ai.product_id\njoin sc1.arrival a on a.id = ai.arrival_id\nwhere $__timeFilter(a.arrival_time)\n  and p.id in (${product:csv})\ngroup by p.id, p.name\norder by \"Количество\" desc, p.id\nlimit 10;",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "groupWidth": 0.7,
+        "barWidth": 0.85,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Фактические остатки",
+      "type": "table",
+      "datasource": {
+        "type": "postgres",
+        "uid": "warehouse-postgres"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "warehouse-postgres"
+          },
+          "rawSql": "select p.id as \"ID\", p.name as \"Товар\", p.unit as \"Единица\",\n       coalesce(sum(i.actual_quantity), 0)::bigint as \"Остаток\"\nfrom sc1.product p\nleft join sc1.inventory i on i.product_id = p.id\nwhere p.id in (${product:csv})\ngroup by p.id, p.name, p.unit\norder by \"Остаток\" desc, p.id\nlimit 30;",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Поступления по поставщикам",
+      "type": "barchart",
+      "datasource": {
+        "type": "postgres",
+        "uid": "warehouse-postgres"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 15
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "warehouse-postgres"
+          },
+          "rawSql": "select pr.name as \"Поставщик\", count(distinct a.id)::bigint as \"Поступлений\"\nfrom sc2.provider pr\njoin sc1.arrival a on a.provider_id = pr.id\njoin sc1.arrival_item ai on ai.arrival_id = a.id\nwhere $__timeFilter(a.arrival_time)\n  and ai.product_id in (${product:csv})\ngroup by pr.id, pr.name\norder by \"Поступлений\" desc, pr.id\nlimit 10;",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "groupWidth": 0.7,
+        "barWidth": 0.85,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    }
+  ]
+}
