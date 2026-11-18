@@ -40,13 +40,14 @@ def main():
         print("8. Вызвать системную функцию")
         print("9. Создать таблицу")
         print("10. Вставить данные в созданную таблицу")
+        print("11. Поделить на ноль")
         print("0. Выход")
         
         choice = input("Выберите пункт: ")
 
         try:
             conn = get_connection()
-            conn.autocommit = True
+            conn.autocommit = False
             cur = conn.cursor()
 
             if choice == '1':
@@ -132,13 +133,24 @@ def main():
                 """)
                 print("Данные успешно вставлены!")
 
+            elif choice == '11':
+                print("\n--- 11. Сломанный запрос  ---")
+                cur.execute("""
+                    select (1 / 0);
+                """)
+                print("Деление на ноль")
+
             elif choice == '0':
                 print("Выход...")
                 break
             else:
                 print("Неверный пункт меню.")
 
+            conn.commit()
+
         except Exception as e:
+            if conn is not None:
+                conn.rollback()
             print(f"Ошибка: {e}")
         finally:
             if 'cur' in locals():
@@ -148,3 +160,28 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+create temp table tx_demo (
+quantity integer check (quantity >= 0)
+);
+
+insert into tx_demo values (10);
+
+begin;
+
+update tx_demo
+set quantity = quantity - 3;
+
+select * from tx_demo;
+
+update tx_demo
+set quantity = -100;
+
+select * from tx_demo;
+
+rollback;
+
+select * from tx_demo;
+"""
