@@ -1,0 +1,14 @@
+# Vim
+.*.sw?
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local settings
+.env
+.env.*
+!.env.example
