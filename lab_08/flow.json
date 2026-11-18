@@ -1,0 +1,64 @@
+[
+  {
+    "name": "Чтение файлов", "type": "GetFile",
+    "properties": {"Input Directory": "/data/input", "File Filter": ".*\\.json", "Keep Source File": "false"},
+    "connections": {"success": "Проверка имени"}
+  },
+  {
+    "name": "Проверка имени", "type": "RouteOnAttribute",
+    "properties": {"provider": "${filename:matches('[0-9a-f]{32}_provider_[0-9]{8}T[0-9]{12}\\.json')}"},
+    "connections": {"provider": "Проверка JSON", "unmatched": "Имя ошибки"}
+  },
+  {
+    "name": "Проверка JSON", "type": "ValidateJson",
+    "properties": {"JSON Schema": "@schema"},
+    "connections": {"valid": "Приведение к JSON", "invalid": "Имя ошибки", "failure": "Имя ошибки"}
+  },
+  {
+    "name": "Приведение к JSON", "type": "ConvertRecord",
+    "properties": {"Record Reader": "@reader", "Record Writer": "@writer"},
+    "connections": {"success": "Разбиение массива", "failure": "Имя ошибки"}
+  },
+  {
+    "name": "Разбиение массива", "type": "SplitJson",
+    "properties": {"JsonPath Expression": "$[*]"},
+    "terminate": ["original"],
+    "connections": {"split": "INSERT в PostgreSQL", "failure": "Имя ошибки"}
+  },
+  {
+    "name": "INSERT в PostgreSQL", "type": "PutDatabaseRecord",
+    "properties": {"Record Reader": "@reader", "Database Connection Pooling Service": "@pool", "Database Type": "PostgreSQL", "Statement Type": "INSERT", "Schema Name": "sc2", "Table Name": "provider"},
+    "connections": {"success": "Все строки загружены", "failure": "Имя ошибки", "retry": "Имя ошибки"}
+  },
+  {
+    "name": "Все строки загружены", "type": "MergeContent",
+    "properties": {"Merge Strategy": "Defragment", "Merge Format": "Binary Concatenation", "Delimiter Strategy": "Text", "Header": "[", "Footer": "]", "Demarcator": ","},
+    "terminate": ["original"],
+    "connections": {"merged": "Лог загрузки", "failure": "Имя ошибки"}
+  },
+  {
+    "name": "Лог загрузки", "type": "LogAttribute",
+    "properties": {"Log Level": "info", "Log Payload": "false", "Log prefix": "LOADED_FILE"},
+    "connections": {"success": "Архив загруженных"}
+  },
+  {
+    "name": "Архив загруженных", "type": "PutFile",
+    "properties": {"Directory": "/data/loaded", "Conflict Resolution Strategy": "fail"},
+    "terminate": ["success"], "connections": {"failure": "Имя ошибки"}
+  },
+  {
+    "name": "Имя ошибки", "type": "UpdateAttribute",
+    "properties": {"source.filename": "${filename}", "filename": "${filename}.${uuid}.failed"},
+    "connections": {"success": "Лог ошибки"}
+  },
+  {
+    "name": "Лог ошибки", "type": "LogAttribute",
+    "properties": {"Log Level": "error", "Log Payload": "false", "Log prefix": "FAILED_FILE"},
+    "connections": {"success": "Архив ошибок"}
+  },
+  {
+    "name": "Архив ошибок", "type": "PutFile",
+    "properties": {"Directory": "/data/rejected", "Conflict Resolution Strategy": "fail"},
+    "terminate": ["success", "failure"]
+  }
+]
