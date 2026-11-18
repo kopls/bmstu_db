@@ -34,7 +34,7 @@ class Program
                  where total > 10000
                  orderby total descending
                  select new { ai.id, total };
-        show("2. Стоимость позиции поступления (как в lab_03)", q2);
+        show("2. Стоимость позиции поступления", q2);
 
         var q3 = from p in products
                  group p by p.unit into units
@@ -209,7 +209,6 @@ class Program
     }
 }
 
-// Поля как в таблицах первой лабы.
 [Table(Schema = "sc1", Name = "product")]
 public class Product
 {

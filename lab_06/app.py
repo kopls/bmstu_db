@@ -1,5 +1,5 @@
 import psycopg2
-from psycopg2 import sql
+import sql from psycopg2
 
 DB_CONFIG = {
     "dbname": "warehouse",
@@ -41,6 +41,7 @@ def main():
         print("9. Создать таблицу")
         print("10. Вставить данные в созданную таблицу")
         print("11. Поделить на ноль")
+        print("12. Дерево складов по типу товара")
         print("0. Выход")
         
         choice = input("Выберите пункт: ")
@@ -140,6 +141,47 @@ def main():
                 """)
                 print("Деление на ноль")
 
+
+            elif choice == '12':
+                print("\n--- 12. Дерево складов по типу товара (единице измерения) ---")
+                product_unit = input("Введите единицу измерения товара (кг, шт, л): ").strip()
+
+                cur.execute("""
+                    with recursive target_locations as (
+                        select distinct i.storage_location_id as loc_id
+                        from sc1.inventory i
+                        join sc1.product p on p.id = i.product_id
+                        where lower(trim(p.unit)) = lower(trim(%s)) 
+                          and i.actual_quantity > 0
+                    ),
+                    location_tree as (
+                        select sl.id, sl.name, sl.capacity, sl.parent_location_id, 0 as depth
+                        from sc1.storage_location sl
+                        join target_locations tl on tl.loc_id = sl.id
+
+                        union all
+
+                        select child.id, child.name, child.capacity, child.parent_location_id, lt.depth + 1
+                        from sc1.storage_location child
+                        join location_tree lt on child.parent_location_id = lt.id
+                        where lt.depth < 20 
+                    )
+                    select id, name, capacity, parent_location_id, depth
+                    from location_tree
+                    order by depth, id;
+                """, (product_unit,))
+
+                if cur.rowcount > 0:
+                    print_table(cur)
+                else:
+                    print(f"Нет данных")
+
+                if cur.description:
+                    print_table(cur)
+                else:
+                    print("Нет данных.")
+
+
             elif choice == '0':
                 print("Выход...")
                 break
@@ -185,3 +227,6 @@ rollback;
 
 select * from tx_demo;
 """
+
+
+
